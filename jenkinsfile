@@ -62,12 +62,23 @@ pipeline {
                 withSonarQubeEnv('sonarqube') {
                     sh "${scannerHome}/bin/sonar-scanner"
                 }
+                timeout(time: 5, unit: 'MINUTES') {
+                    script {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            echo "Quality Gate failed: ${qg.status}"
+                            error "Pipeline aborted due to quality gate failure: ${qg.status}"
+                        } else {
+                            echo "Quality Gate passed: ${qg.status}"
+                        }
+                    }
+                }
             }
         }
 
         stage('Package Artifact') {
             steps {
-                sh 'zip -qr php-todo.zip ${WORKSPACE}/*'
+                sh 'zip -qr php-todo.zip ${WORKSPACE}/* ${WORKSPACE}/.[!.]*'
             }
         }
 
@@ -97,6 +108,12 @@ pipeline {
 
         stage('Deploy to Dev Environment') {
             steps {
+                script {
+                    def allowedRepos = ['https://github.com/alagbaski/php-todo.git', 'https://github.com/alagbaski/ansible-config-mgt.git']
+                    if (!allowedRepos.contains(env.REPO_URL)) {
+                        error "Deployment aborted: Unauthorized repository ${env.REPO_URL}"
+                    }
+                }
                 build job: 'ansible-config-mgt/main', 
                 parameters: [
                     [$class: 'StringParameterValue', name: 'inventory', value: 'dev'],
