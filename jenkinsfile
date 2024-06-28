@@ -114,7 +114,7 @@ pipeline {
         stage('Deploy to Dev Environment') {
             steps {
                 script {
-                    def allowedRepos = ['https://github.com/alagbaski/php-todo.git', 'https://github.com/alagbaski/ansible-config-mgt.git']
+                    def allowedRepos = ['https://github.com//php-todo.git', 'https://github.com/<username>/ansible-config-mgt.git']
                     if (!allowedRepos.contains(env.REPO_URL)) {
                         error "Deployment aborted: Unauthorized repository ${env.REPO_URL}"
                     }
